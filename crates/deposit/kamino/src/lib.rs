@@ -139,7 +139,7 @@ impl<'info> Deposit<'info> for Kamino {
             ];
 
             let account_infos = [
-                ctx.reserve,
+                reserve,
                 ctx.kamino_lending_program,
                 ctx.kamino_lending_program,
                 ctx.kamino_lending_program,
