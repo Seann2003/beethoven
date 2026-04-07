@@ -1,12 +1,12 @@
 [package]
 name = "beethoven-client"
-description = "Client-side helper for composing Beethoven swap instructions"
+description = "Client-side helper for composing Beethoven swap and deposit instructions"
 version = "0.0.1"
 license = "MIT"
 edition = "2021"
 
 [features]
-default = ["swap", "resolve"]
+default = ["swap", "deposit", "resolve"]
 
 swap = [
     "manifest",
@@ -14,6 +14,10 @@ swap = [
     "futarchy",
     "gamma",
     "omnipair",
+]
+
+deposit = [
+    "hylo",
 ]
 
 resolve = [
@@ -28,6 +32,7 @@ aldrin = []
 futarchy = []
 gamma = []
 omnipair = []
+hylo = []
 
 [dependencies]
 solana-address = { version = "2", features = ["curve25519"] }

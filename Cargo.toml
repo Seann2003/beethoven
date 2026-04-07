@@ -12,7 +12,7 @@ default = ["deposit", "swap"]
 upstream-bpf = []
 
 # Action groups
-deposit = ["kamino-deposit", "jupiter-deposit", "drift-deposit"]
+deposit = ["kamino-deposit", "jupiter-deposit", "drift-deposit", "hylo-deposit"]
 swap = [
     "perena-swap",
     "solfi-swap",
@@ -32,6 +32,7 @@ swap = [
 kamino-deposit = ["dep:beethoven-deposit-kamino"]
 jupiter-deposit = ["dep:beethoven-deposit-jupiter"]
 drift-deposit = ["dep:beethoven-deposit-drift"]
+hylo-deposit = ["dep:beethoven-deposit-hylo"]
 
 # Swap protocols
 perena-swap = ["dep:beethoven-swap-perena"]
@@ -58,6 +59,7 @@ solana-program-error = "3.0.0"
 beethoven-deposit-kamino = { path = "crates/deposit/kamino", optional = true }
 beethoven-deposit-jupiter = { path = "crates/deposit/jupiter", optional = true }
 beethoven-deposit-drift = { path = "crates/deposit/drift", optional = true }
+beethoven-deposit-hylo = { path = "crates/deposit/hylo", optional = true }
 beethoven-swap-perena = { path = "crates/swap/perena", optional = true }
 beethoven-swap-solfi = { path = "crates/swap/solfi", optional = true }
 beethoven-swap-solfi-v2 = { path = "crates/swap/solfi-v2", optional = true }
@@ -77,6 +79,7 @@ members = [
     "crates/deposit/kamino",
     "crates/deposit/jupiter",
     "crates/deposit/drift",
+    "crates/deposit/hylo",
     "crates/swap/perena",
     "crates/swap/solfi",
     "crates/swap/solfi-v2",
@@ -114,6 +117,7 @@ mollusk-svm-programs-token = "0.11.0"
 beethoven-client = { path = "crates/client", features = [
     "manifest",
     "gamma",
+    "hylo",
     "resolve",
 ] }
 solana-rpc-client = "3"

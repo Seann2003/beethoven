@@ -554,6 +554,9 @@ pub enum DepositContext<'info> {
 
     #[cfg(feature = "drift-deposit")]
     Drift(crate::drift::DriftDepositAccounts<'info>),
+
+    #[cfg(feature = "hylo-deposit")]
+    Hylo(crate::hylo::HyloDepositAccounts<'info>),
 }
 
 /// Protocol-specific deposit data enum for use with DepositContext
@@ -564,6 +567,8 @@ pub enum DepositData {
     Jupiter(()),
     #[cfg(feature = "drift-deposit")]
     Drift(crate::drift::DriftDepositData),
+    #[cfg(feature = "hylo-deposit")]
+    Hylo(crate::hylo::HyloDepositData),
 }
 
 impl<'a> DepositContext<'a> {
@@ -581,6 +586,12 @@ impl<'a> DepositContext<'a> {
             #[cfg(feature = "drift-deposit")]
             DepositContext::Drift(_) => Ok((
                 DepositData::Drift(crate::drift::DriftDepositData::try_from(data)?),
+                &[],
+            )),
+
+            #[cfg(feature = "hylo-deposit")]
+            DepositContext::Hylo(_) => Ok((
+                DepositData::Hylo(crate::hylo::HyloDepositData::try_from(data)?),
                 &[],
             )),
 
@@ -615,6 +626,15 @@ impl<'info> Deposit<'info> for DepositContext<'info> {
             DepositContext::Drift(accounts) => {
                 if let DepositData::Drift(data) = data {
                     crate::drift::Drift::deposit_signed(accounts, amount, data, signer_seeds)
+                } else {
+                    Err(ProgramError::InvalidInstructionData)
+                }
+            }
+
+            #[cfg(feature = "hylo-deposit")]
+            DepositContext::Hylo(accounts) => {
+                if let DepositData::Hylo(data) = data {
+                    crate::hylo::Hylo::deposit_signed(accounts, amount, data, signer_seeds)
                 } else {
                     Err(ProgramError::InvalidInstructionData)
                 }
@@ -657,6 +677,12 @@ pub fn try_from_deposit_context<'info>(
     if address_eq(detector_account.address(), &crate::drift::DRIFT_PROGRAM_ID) {
         let ctx = crate::drift::DriftDepositAccounts::try_from(accounts)?;
         return Ok(DepositContext::Drift(ctx));
+    }
+
+    #[cfg(feature = "hylo-deposit")]
+    if address_eq(detector_account.address(), &crate::hylo::HYLO_PROGRAM_ID) {
+        let ctx = crate::hylo::HyloDepositAccounts::try_from(accounts)?;
+        return Ok(DepositContext::Hylo(ctx));
     }
 
     Err(ProgramError::InvalidAccountData)
