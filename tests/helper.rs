@@ -34,6 +34,9 @@ pub const OMNIPAIR_PROGRAM_ID: Address = address!("omnixgS8fnqHfCcTGKWj6JtKjzpJZ
 pub const HYLO_PROGRAM_ID: Address = address!("HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn");
 pub const ASSOCIATED_TOKEN_PROGRAM_ID: Address =
     address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+pub const HADRON_PROGRAM_ID: Address = address!("Q72w4coozA552keKDdeeh2EyQw32qfMFsHPu6cbatom");
+pub const RAYDIUM_CPMM_PROGRAM_ID: Address =
+    address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
 pub const SYSTEM_PROGRAM_ID: Address = address!("11111111111111111111111111111111");
 pub const BPF_LOADER: Address = address!("BPFLoader2111111111111111111111111111111111");
 
@@ -501,6 +504,12 @@ pub fn omnipair_fixtures_dir() -> String {
 
 pub fn hylo_fixtures_dir() -> String {
     format!("{}/fixtures/deposit/hylo", env!("CARGO_MANIFEST_DIR"))
+pub fn hadron_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/hadron", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn raydium_cpmm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/raydium-cpmm", env!("CARGO_MANIFEST_DIR"))
 }
 
 #[cfg(feature = "upstream-bpf")]

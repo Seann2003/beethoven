@@ -57,6 +57,11 @@ pub enum SwapContext<'info> {
 
     #[cfg(feature = "omnipair-swap")]
     Omnipair(crate::omnipair::OmnipairSwapAccounts<'info>),
+
+    #[cfg(feature = "hadron-swap")]
+    Hadron(crate::hadron::HadronSwapAccounts<'info>),
+    #[cfg(feature = "raydium-cpmm-swap")]
+    RaydiumCpmm(crate::raydium_cpmm::RaydiumCpmmSwapAccounts<'info>),
 }
 
 /// Protocol-specific swap data enum for use with SwapContext
@@ -96,6 +101,11 @@ pub enum SwapData<'a> {
 
     #[cfg(feature = "omnipair-swap")]
     Omnipair(()),
+
+    #[cfg(feature = "hadron-swap")]
+    Hadron(crate::hadron::HadronSwapData),
+    #[cfg(feature = "raydium-cpmm-swap")]
+    RaydiumCpmm(()),
 }
 
 impl<'a> SwapContext<'a> {
@@ -210,6 +220,22 @@ impl<'a> SwapContext<'a> {
 
             #[cfg(feature = "omnipair-swap")]
             SwapContext::Omnipair(_) => Ok((SwapData::Omnipair(()), data)),
+
+            #[cfg(feature = "hadron-swap")]
+            SwapContext::Hadron(_) => {
+                let n = crate::hadron::HadronSwapData::DATA_LEN;
+                if data.len() < n {
+                    return Err(ProgramError::InvalidInstructionData);
+                }
+                let (mine, rest) = data.split_at(n);
+                Ok((
+                    SwapData::Hadron(crate::hadron::HadronSwapData::try_from(mine)?),
+                    rest,
+                ))
+            }
+
+            #[cfg(feature = "raydium-cpmm-swap")]
+            SwapContext::RaydiumCpmm(_) => Ok((SwapData::RaydiumCpmm(()), data)),
 
             #[allow(unreachable_patterns)]
             _ => Err(ProgramError::InvalidAccountData),
@@ -351,6 +377,28 @@ impl<'a> Swap<'a> for SwapContext<'a> {
             #[cfg(feature = "omnipair-swap")]
             (SwapContext::Omnipair(accounts), SwapData::Omnipair(())) => {
                 crate::omnipair::Omnipair::swap_signed(
+                    accounts,
+                    in_amount,
+                    minimum_out_amount,
+                    &(),
+                    signer_seeds,
+                )
+            }
+
+            #[cfg(feature = "hadron-swap")]
+            (SwapContext::Hadron(accounts), SwapData::Hadron(d)) => {
+                crate::hadron::Hadron::swap_signed(
+                    accounts,
+                    in_amount,
+                    minimum_out_amount,
+                    d,
+                    signer_seeds,
+                )
+            }
+
+            #[cfg(feature = "raydium-cpmm-swap")]
+            (SwapContext::RaydiumCpmm(accounts), SwapData::RaydiumCpmm(())) => {
+                crate::raydium_cpmm::RaydiumCpmm::swap_signed(
                     accounts,
                     in_amount,
                     minimum_out_amount,
@@ -519,6 +567,28 @@ pub fn try_from_swap_context<'info>(
         return Ok((SwapContext::Omnipair(ctx), rest));
     }
 
+    #[cfg(feature = "hadron-swap")]
+    if address_eq(
+        detector_account.address(),
+        &crate::hadron::HADRON_PROGRAM_ID,
+    ) {
+        let ctx = crate::hadron::HadronSwapAccounts::try_from(accounts)?;
+        return Ok((SwapContext::Hadron(ctx), &[]));
+    }
+
+    #[cfg(feature = "raydium-cpmm-swap")]
+    if address_eq(
+        detector_account.address(),
+        &crate::raydium_cpmm::RAYDIUM_CPMM_PROGRAM_ID,
+    ) {
+        let (mine, rest) = split_accounts_checked(
+            accounts,
+            crate::raydium_cpmm::RaydiumCpmmSwapAccounts::NUM_ACCOUNTS,
+        )?;
+        let ctx = crate::raydium_cpmm::RaydiumCpmmSwapAccounts::try_from(mine)?;
+        return Ok((SwapContext::RaydiumCpmm(ctx), rest));
+    }
+
     Err(ProgramError::InvalidAccountData)
 }
 
@@ -557,6 +627,8 @@ pub enum DepositContext<'info> {
 
     #[cfg(feature = "hylo-deposit")]
     Hylo(crate::hylo::HyloDepositAccounts<'info>),
+    #[cfg(feature = "marginfi-deposit")]
+    Marginfi(crate::marginfi::MarginfiDepositAccounts<'info>),
 }
 
 /// Protocol-specific deposit data enum for use with DepositContext
@@ -569,6 +641,8 @@ pub enum DepositData {
     Drift(crate::drift::DriftDepositData),
     #[cfg(feature = "hylo-deposit")]
     Hylo(crate::hylo::HyloDepositData),
+    #[cfg(feature = "marginfi-deposit")]
+    Marginfi(crate::marginfi::MarginfiDepositData),
 }
 
 impl<'a> DepositContext<'a> {
@@ -592,6 +666,9 @@ impl<'a> DepositContext<'a> {
             #[cfg(feature = "hylo-deposit")]
             DepositContext::Hylo(_) => Ok((
                 DepositData::Hylo(crate::hylo::HyloDepositData::try_from(data)?),
+            #[cfg(feature = "marginfi-deposit")]
+            DepositContext::Marginfi(_) => Ok((
+                DepositData::Marginfi(crate::marginfi::MarginfiDepositData::try_from(data)?),
                 &[],
             )),
 
@@ -635,6 +712,10 @@ impl<'info> Deposit<'info> for DepositContext<'info> {
             DepositContext::Hylo(accounts) => {
                 if let DepositData::Hylo(data) = data {
                     crate::hylo::Hylo::deposit_signed(accounts, amount, data, signer_seeds)
+            #[cfg(feature = "marginfi-deposit")]
+            DepositContext::Marginfi(accounts) => {
+                if let DepositData::Marginfi(data) = data {
+                    crate::marginfi::Marginfi::deposit_signed(accounts, amount, data, signer_seeds)
                 } else {
                     Err(ProgramError::InvalidInstructionData)
                 }
@@ -683,6 +764,13 @@ pub fn try_from_deposit_context<'info>(
     if address_eq(detector_account.address(), &crate::hylo::HYLO_PROGRAM_ID) {
         let ctx = crate::hylo::HyloDepositAccounts::try_from(accounts)?;
         return Ok(DepositContext::Hylo(ctx));
+    #[cfg(feature = "marginfi-deposit")]
+    if address_eq(
+        detector_account.address(),
+        &crate::marginfi::MARGINFI_PROGRAM_ID,
+    ) {
+        let ctx = crate::marginfi::MarginfiDepositAccounts::try_from(accounts)?;
+        return Ok(DepositContext::Marginfi(ctx));
     }
 
     Err(ProgramError::InvalidAccountData)

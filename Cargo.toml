@@ -12,7 +12,8 @@ default = ["deposit", "swap"]
 upstream-bpf = []
 
 # Action groups
-deposit = ["kamino-deposit", "jupiter-deposit", "drift-deposit", "hylo-deposit"]
+deposit = ["kamino-deposit", "jupiter-deposit", "drift-deposit", "marginfi-deposit", "hylo-deposit"]
+
 swap = [
     "perena-swap",
     "solfi-swap",
@@ -26,6 +27,8 @@ swap = [
     "scale_amm-swap",
     "scale_vmm-swap",
     "omnipair-swap",
+    "hadron-swap",
+    "raydium-cpmm-swap",
 ]
 
 # Deposit protocols
@@ -33,6 +36,7 @@ kamino-deposit = ["dep:beethoven-deposit-kamino"]
 jupiter-deposit = ["dep:beethoven-deposit-jupiter"]
 drift-deposit = ["dep:beethoven-deposit-drift"]
 hylo-deposit = ["dep:beethoven-deposit-hylo"]
+marginfi-deposit = ["dep:beethoven-deposit-marginfi"]
 
 # Swap protocols
 perena-swap = ["dep:beethoven-swap-perena"]
@@ -47,6 +51,8 @@ gamma-swap = ["dep:beethoven-swap-gamma"]
 scale_amm-swap = ["dep:beethoven-swap-scale-amm"]
 scale_vmm-swap = ["dep:beethoven-swap-scale-vmm"]
 omnipair-swap = ["dep:beethoven-swap-omnipair"]
+hadron-swap = ["dep:beethoven-swap-hadron"]
+raydium-cpmm-swap = ["dep:beethoven-swap-raydium-cpmm"]
 
 [dependencies]
 beethoven-core = { path = "crates/core" }
@@ -60,6 +66,7 @@ beethoven-deposit-kamino = { path = "crates/deposit/kamino", optional = true }
 beethoven-deposit-jupiter = { path = "crates/deposit/jupiter", optional = true }
 beethoven-deposit-drift = { path = "crates/deposit/drift", optional = true }
 beethoven-deposit-hylo = { path = "crates/deposit/hylo", optional = true }
+beethoven-deposit-marginfi = { path = "crates/deposit/marginfi", optional = true }
 beethoven-swap-perena = { path = "crates/swap/perena", optional = true }
 beethoven-swap-solfi = { path = "crates/swap/solfi", optional = true }
 beethoven-swap-solfi-v2 = { path = "crates/swap/solfi-v2", optional = true }
@@ -72,6 +79,8 @@ beethoven-swap-gamma = { path = "crates/swap/gamma", optional = true }
 beethoven-swap-scale-amm = { path = "crates/swap/scale-amm", optional = true }
 beethoven-swap-scale-vmm = { path = "crates/swap/scale-vmm", optional = true }
 beethoven-swap-omnipair = { path = "crates/swap/omnipair", optional = true }
+beethoven-swap-hadron = { path = "crates/swap/hadron", optional = true }
+beethoven-swap-raydium-cpmm = { path = "crates/swap/raydium-cpmm", optional = true }
 
 [workspace]
 members = [
@@ -80,6 +89,7 @@ members = [
     "crates/deposit/jupiter",
     "crates/deposit/drift",
     "crates/deposit/hylo",
+    "crates/deposit/marginfi",
     "crates/swap/perena",
     "crates/swap/solfi",
     "crates/swap/solfi-v2",
@@ -92,6 +102,8 @@ members = [
     "crates/swap/scale-amm",
     "crates/swap/scale-vmm",
     "crates/swap/omnipair",
+    "crates/swap/hadron",
+    "crates/swap/raydium-cpmm",
     "program-test",
     "crates/client",
 ]
@@ -118,6 +130,8 @@ beethoven-client = { path = "crates/client", features = [
     "manifest",
     "gamma",
     "hylo",
+    "hadron",
+    "raydium_cpmm",
     "resolve",
 ] }
 solana-rpc-client = "3"
