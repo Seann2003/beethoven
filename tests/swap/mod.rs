@@ -1,10 +1,17 @@
+mod aldrin;
+mod aldrin_v2;
+mod futarchy;
 mod gamma;
 mod hadron;
+mod heaven;
 mod manifest;
 mod multi_swap;
 mod omnipair;
+mod perena;
 mod raydium_cpmm;
 mod route;
 mod scale_amm;
 mod scale_vmm;
+mod solfi;
+mod solfi_v2;
 mod tagged;

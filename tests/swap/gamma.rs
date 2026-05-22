@@ -70,8 +70,10 @@ fn test_gamma_swap_cpi() {
     // Selling SOL (input=WSOL) for USDC (output)
     let initial_wsol = 1_000_000_000u64; // 1 SOL
     let initial_usdc = 0u64;
-    let trader_input = create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol);
-    let trader_output = create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc);
+    let trader_input =
+        create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol, false);
+    let trader_output =
+        create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc, false);
 
     // Verify initial balances
     assert_eq!(get_token_balance(&svm, &trader_input), initial_wsol);
@@ -90,7 +92,7 @@ fn test_gamma_swap_cpi() {
     // [13] observation_state
     let accounts = vec![
         AccountMeta::new_readonly(GAMMA_PROGRAM_ID, false), // gamma_program (for detection)
-        AccountMeta::new_readonly(payer.pubkey(), true),    // payer
+        AccountMeta::new(payer.pubkey(), true),             // payer
         AccountMeta::new_readonly(AUTHORITY, false),        // authority PDA
         AccountMeta::new_readonly(AMM_CONFIG, false),       // amm_config
         AccountMeta::new(POOL_STATE, false),                // pool_state

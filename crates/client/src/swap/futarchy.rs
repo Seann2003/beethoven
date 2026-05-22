@@ -1,9 +1,27 @@
-#[cfg(feature = "resolve")]
-use crate::error::ClientError;
 use solana_address::Address;
+#[cfg(feature = "resolve")]
+use {
+    crate::{
+        error::ClientError, get_associated_token_address, get_token_program_for_mint, read_pubkey,
+        TOKEN_PROGRAM_ID,
+    },
+    solana_instruction::AccountMeta,
+    solana_rpc_client::nonblocking::rpc_client::RpcClient,
+};
 
 pub const FUTARCHY_PROGRAM_ID: Address =
     Address::from_str_const("FUTARELBfJfQ8RDGhg1wdhddq1odMAJUePHFuBYfUxKq");
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum SwapType {
+    Buy = 0,
+    Sell = 1,
+}
+
+pub fn build_extra_data(swap_type: SwapType) -> Vec<u8> {
+    vec![swap_type as u8]
+}
 
 // Futarchy Dao layout (from on-chain IDL: amm_v0.3.json)
 //
@@ -54,15 +72,13 @@ fn compute_amm_field_offsets(
 
 #[cfg(feature = "resolve")]
 pub async fn resolve(
-    rpc: &solana_rpc_client::nonblocking::rpc_client::RpcClient,
+    rpc: &RpcClient,
     dao: Option<&Address>,
-    swap_type: u8,
-    _mint_a: &Address,
-    _mint_b: &Address,
+    swap_type: &SwapType,
+    mint_a: &Address,
+    mint_b: &Address,
     user: &Address,
-) -> Result<(Vec<solana_instruction::AccountMeta>, Vec<u8>), ClientError> {
-    use solana_instruction::AccountMeta;
-
+) -> Result<(Vec<AccountMeta>, Vec<u8>), ClientError> {
     // Futarchy requires an explicit DAO address — the embedded PoolState enum
     // makes getProgramAccounts with fixed memcmp offsets impractical.
     let dao_pubkey = dao.ok_or(ClientError::InvalidAccountData(
@@ -82,15 +98,30 @@ pub async fn resolve(
     let (base_mint_offset, quote_mint_offset, base_vault_offset, quote_vault_offset) =
         compute_amm_field_offsets(pool_state_variant)?;
 
-    let base_mint = crate::read_pubkey(&dao_data, base_mint_offset)?;
-    let quote_mint = crate::read_pubkey(&dao_data, quote_mint_offset)?;
-    let amm_base_vault = crate::read_pubkey(&dao_data, base_vault_offset)?;
-    let amm_quote_vault = crate::read_pubkey(&dao_data, quote_vault_offset)?;
+    let base_mint = read_pubkey(&dao_data, base_mint_offset)?;
+    let quote_mint = read_pubkey(&dao_data, quote_mint_offset)?;
+    let amm_base_vault = read_pubkey(&dao_data, base_vault_offset)?;
+    let amm_quote_vault = read_pubkey(&dao_data, quote_vault_offset)?;
 
-    let user_base_ata =
-        crate::get_associated_token_address(user, &base_mint, &crate::TOKEN_PROGRAM_ID);
-    let user_quote_ata =
-        crate::get_associated_token_address(user, &quote_mint, &crate::TOKEN_PROGRAM_ID);
+    let pair_matches = (*mint_a == base_mint && *mint_b == quote_mint)
+        || (*mint_a == quote_mint && *mint_b == base_mint);
+    if !pair_matches {
+        return Err(ClientError::MintMismatch {
+            expected: format!("{}/{}", base_mint, quote_mint),
+            got: format!("{}/{}", mint_a, mint_b),
+        });
+    }
+
+    let base_token_program = get_token_program_for_mint(rpc, &base_mint).await?;
+    let quote_token_program = get_token_program_for_mint(rpc, &quote_mint).await?;
+    if base_token_program != TOKEN_PROGRAM_ID || quote_token_program != TOKEN_PROGRAM_ID {
+        return Err(ClientError::InvalidAccountData(
+            "Futarchy mints must be owned by the SPL Token program".to_string(),
+        ));
+    }
+
+    let user_base_ata = get_associated_token_address(user, &base_mint, &TOKEN_PROGRAM_ID);
+    let user_quote_ata = get_associated_token_address(user, &quote_mint, &TOKEN_PROGRAM_ID);
 
     let (event_authority, _) =
         Address::find_program_address(&[b"__event_authority"], &FUTARCHY_PROGRAM_ID);
@@ -102,11 +133,11 @@ pub async fn resolve(
         AccountMeta::new(user_quote_ata, false),
         AccountMeta::new(amm_base_vault, false),
         AccountMeta::new(amm_quote_vault, false),
-        AccountMeta::new_readonly(*user, true),
-        AccountMeta::new_readonly(crate::TOKEN_PROGRAM_ID, false),
+        AccountMeta::new(*user, true),
+        AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         AccountMeta::new_readonly(event_authority, false),
         AccountMeta::new_readonly(FUTARCHY_PROGRAM_ID, false),
     ];
 
-    Ok((accounts, vec![swap_type]))
+    Ok((accounts, build_extra_data(*swap_type)))
 }

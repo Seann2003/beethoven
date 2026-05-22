@@ -23,19 +23,29 @@ use {
 pub const TEST_PROGRAM_ID: Address = Address::new_from_array([0x01; 32]);
 pub const TOKEN_PROGRAM_ID: Address = address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 pub const TOKEN_2022_PROGRAM_ID: Address = address!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+pub const ASSOCIATED_TOKEN_PROGRAM_ID: Address =
+    address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
 // Protocol program IDs (for detection)
 pub const KAMINO_PROGRAM_ID: Address = address!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD");
 pub const JUPITER_PROGRAM_ID: Address = address!("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4");
 pub const PERENA_PROGRAM_ID: Address = address!("NUMERUNsFCP3kuNmWZuXtm1AaQCPj9uw6Guv2Ekoi5P");
 pub const SOLFI_PROGRAM_ID: Address = address!("SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe");
+pub const SOLFI_V2_PROGRAM_ID: Address = address!("SV2EYYJyRz2YhfXwXnhNAevDEui5Q6yrfyo13WtupPF");
 pub const GAMMA_PROGRAM_ID: Address = address!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 pub const MANIFEST_PROGRAM_ID: Address = address!("MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms");
 pub const OMNIPAIR_PROGRAM_ID: Address = address!("omnixgS8fnqHfCcTGKWj6JtKjzpJZ1Y5y9pyFkQDkYE");
 pub const HADRON_PROGRAM_ID: Address = address!("Q72w4coozA552keKDdeeh2EyQw32qfMFsHPu6cbatom");
 pub const RAYDIUM_CPMM_PROGRAM_ID: Address =
     address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
+pub const FUTARCHY_PROGRAM_ID: Address = address!("FUTARELBfJfQ8RDGhg1wdhddq1odMAJUePHFuBYfUxKq");
+pub const HEAVEN_PROGRAM_ID: Address = address!("HEAVENoP2qxoeuF8Dj2oT1GHEnu49U5mJYkdeC8BAX2o");
+pub const ALDRIN_PROGRAM_ID: Address = address!("AMM55ShdkoGRB5jVYPjWziwk8m5MpwyDgsMWHaMSQWH6");
+pub const ALDRIN_V2_PROGRAM_ID: Address = address!("CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4");
+pub const SCALE_AMM_PROGRAM_ID: Address = address!("SCALEwAvEK5gtkdHiFzXfPgtk2YwJxPDzaV3aDmR7tA");
+pub const SCALE_VMM_PROGRAM_ID: Address = address!("SCALEWoRSpVZpMRqHEcDfNvBh3nUSe34jDr9r689gLa");
 pub const SYSTEM_PROGRAM_ID: Address = address!("11111111111111111111111111111111");
+pub const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 pub const BPF_LOADER: Address = address!("BPFLoader2111111111111111111111111111111111");
 
 pub mod discriminator {
@@ -136,14 +146,21 @@ pub fn create_account_for_mint(mint_data: Mint) -> Account {
 }
 
 /// Create an Account for a Token Account
-pub fn create_account_for_token_account(token_account_data: TokenAccount) -> Account {
+pub fn create_account_for_token_account(
+    token_account_data: TokenAccount,
+    is_2022: bool,
+) -> Account {
     let mut data = vec![0u8; TokenAccount::LEN];
     TokenAccount::pack(token_account_data, &mut data).unwrap();
 
     Account {
         lamports: Rent::default().minimum_balance(TokenAccount::LEN),
         data,
-        owner: TOKEN_PROGRAM_ID,
+        owner: if is_2022 {
+            TOKEN_2022_PROGRAM_ID
+        } else {
+            TOKEN_PROGRAM_ID
+        },
         executable: false,
         rent_epoch: 0,
     }
@@ -155,18 +172,22 @@ pub fn create_token_account(
     owner: &Address,
     mint: &Address,
     amount: u64,
+    is_2022: bool,
 ) -> Address {
     let pubkey = Keypair::new().pubkey();
-    let account = create_account_for_token_account(TokenAccount {
-        mint: *mint,
-        owner: *owner,
-        amount,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    });
+    let account = create_account_for_token_account(
+        TokenAccount {
+            mint: *mint,
+            owner: *owner,
+            amount,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        },
+        is_2022,
+    );
     svm.set_account(pubkey, account).unwrap();
     pubkey
 }
@@ -178,17 +199,21 @@ pub fn create_token_account_at(
     owner: &Address,
     mint: &Address,
     amount: u64,
+    is_2022: bool,
 ) {
-    let account = create_account_for_token_account(TokenAccount {
-        mint: *mint,
-        owner: *owner,
-        amount,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    });
+    let account = create_account_for_token_account(
+        TokenAccount {
+            mint: *mint,
+            owner: *owner,
+            amount,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        },
+        is_2022,
+    );
     svm.set_account(pubkey, account).unwrap();
 }
 
@@ -587,6 +612,42 @@ pub fn hadron_fixtures_dir() -> String {
 
 pub fn raydium_cpmm_fixtures_dir() -> String {
     format!("{}/fixtures/swap/raydium-cpmm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn aldrin_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/aldrin", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn aldrin_v2_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/aldrin-v2", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn futarchy_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/futarchy", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn perena_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/perena", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn heaven_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/heaven", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn scale_amm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/scale-amm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn scale_vmm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/scale-vmm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn solfi_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/solfi", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn solfi_v2_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/solfi-v2", env!("CARGO_MANIFEST_DIR"))
 }
 
 #[cfg(feature = "upstream-bpf")]

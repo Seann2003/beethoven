@@ -58,7 +58,7 @@ impl SwapProtocolTag {
             Self::Futarchy => 10,
             Self::Gamma => 14,
             Self::ScaleAmm => 15,
-            Self::ScaleVmm => 22,
+            Self::ScaleVmm => 19,
             Self::Omnipair => 15,
             Self::Hadron => 16,
             Self::RaydiumCpmm => 14,
@@ -107,7 +107,7 @@ pub enum SwapContext<'info> {
     #[cfg(feature = "solfi-swap")]
     SolFi(crate::solfi::SolFiSwapAccounts<'info>),
 
-    #[cfg(feature = "solfi_v2-swap")]
+    #[cfg(feature = "solfi-v2-swap")]
     SolFiV2(crate::solfi_v2::SolFiV2SwapAccounts<'info>),
 
     #[cfg(feature = "manifest-swap")]
@@ -119,7 +119,7 @@ pub enum SwapContext<'info> {
     #[cfg(feature = "aldrin-swap")]
     Aldrin(crate::aldrin::AldrinSwapAccounts<'info>),
 
-    #[cfg(feature = "aldrin_v2-swap")]
+    #[cfg(feature = "aldrin-v2-swap")]
     AldrinV2(crate::aldrin_v2::AldrinV2SwapAccounts<'info>),
 
     #[cfg(feature = "futarchy-swap")]
@@ -128,10 +128,10 @@ pub enum SwapContext<'info> {
     #[cfg(feature = "gamma-swap")]
     Gamma(crate::gamma::GammaSwapAccounts<'info>),
 
-    #[cfg(feature = "scale_amm-swap")]
+    #[cfg(feature = "scale-amm-swap")]
     ScaleAmm(crate::scale_amm::ScaleAmmSwapAccounts<'info>),
 
-    #[cfg(feature = "scale_vmm-swap")]
+    #[cfg(feature = "scale-vmm-swap")]
     ScaleVmm(crate::scale_vmm::ScaleVmmSwapAccounts<'info>),
 
     #[cfg(feature = "omnipair-swap")]
@@ -139,6 +139,7 @@ pub enum SwapContext<'info> {
 
     #[cfg(feature = "hadron-swap")]
     Hadron(crate::hadron::HadronSwapAccounts<'info>),
+
     #[cfg(feature = "raydium-cpmm-swap")]
     RaydiumCpmm(crate::raydium_cpmm::RaydiumCpmmSwapAccounts<'info>),
 }
@@ -151,7 +152,7 @@ pub enum SwapData<'a> {
     #[cfg(feature = "solfi-swap")]
     SolFi(crate::solfi::SolFiSwapData),
 
-    #[cfg(feature = "solfi_v2-swap")]
+    #[cfg(feature = "solfi-v2-swap")]
     SolFiV2(crate::solfi_v2::SolFiV2SwapData),
 
     #[cfg(feature = "manifest-swap")]
@@ -163,7 +164,7 @@ pub enum SwapData<'a> {
     #[cfg(feature = "aldrin-swap")]
     Aldrin(crate::aldrin::AldrinSwapData),
 
-    #[cfg(feature = "aldrin_v2-swap")]
+    #[cfg(feature = "aldrin-v2-swap")]
     AldrinV2(crate::aldrin_v2::AldrinV2SwapData),
 
     #[cfg(feature = "futarchy-swap")]
@@ -172,10 +173,10 @@ pub enum SwapData<'a> {
     #[cfg(feature = "gamma-swap")]
     Gamma(()),
 
-    #[cfg(feature = "scale_amm-swap")]
+    #[cfg(feature = "scale-amm-swap")]
     ScaleAmm(crate::scale_amm::ScaleAmmSwapData),
 
-    #[cfg(feature = "scale_vmm-swap")]
+    #[cfg(feature = "scale-vmm-swap")]
     ScaleVmm(crate::scale_vmm::ScaleVmmSwapData),
 
     #[cfg(feature = "omnipair-swap")]
@@ -183,6 +184,7 @@ pub enum SwapData<'a> {
 
     #[cfg(feature = "hadron-swap")]
     Hadron(crate::hadron::HadronSwapData),
+
     #[cfg(feature = "raydium-cpmm-swap")]
     RaydiumCpmm(()),
 }
@@ -214,7 +216,7 @@ impl<'a> SwapContext<'a> {
                 ))
             }
 
-            #[cfg(feature = "solfi_v2-swap")]
+            #[cfg(feature = "solfi-v2-swap")]
             SwapContext::SolFiV2(_) => {
                 let n = crate::solfi_v2::SolFiV2SwapData::DATA_LEN;
                 let (mine, rest) = split_data_checked(data, n)?;
@@ -253,7 +255,7 @@ impl<'a> SwapContext<'a> {
                 ))
             }
 
-            #[cfg(feature = "aldrin_v2-swap")]
+            #[cfg(feature = "aldrin-v2-swap")]
             SwapContext::AldrinV2(_) => {
                 let n = crate::aldrin_v2::AldrinV2SwapData::DATA_LEN;
                 let (mine, rest) = split_data_checked(data, n)?;
@@ -276,7 +278,7 @@ impl<'a> SwapContext<'a> {
             #[cfg(feature = "gamma-swap")]
             SwapContext::Gamma(_) => Ok((SwapData::Gamma(()), data)),
 
-            #[cfg(feature = "scale_amm-swap")]
+            #[cfg(feature = "scale-amm-swap")]
             SwapContext::ScaleAmm(_) => {
                 let n = crate::scale_amm::ScaleAmmSwapData::DATA_LEN;
                 let (mine, rest) = split_data_checked(data, n)?;
@@ -286,7 +288,7 @@ impl<'a> SwapContext<'a> {
                 ))
             }
 
-            #[cfg(feature = "scale_vmm-swap")]
+            #[cfg(feature = "scale-vmm-swap")]
             SwapContext::ScaleVmm(_) => {
                 let n = crate::scale_vmm::ScaleVmmSwapData::DATA_LEN;
                 let (mine, rest) = split_data_checked(data, n)?;
@@ -342,7 +344,7 @@ impl<'a> SwapContext<'a> {
                 Ok(crate::solfi::SolFi::token_accounts(accounts, d))
             }
 
-            #[cfg(feature = "solfi_v2-swap")]
+            #[cfg(feature = "solfi-v2-swap")]
             (SwapContext::SolFiV2(accounts), SwapData::SolFiV2(d)) => {
                 Ok(crate::solfi_v2::SolFiV2::token_accounts(accounts, d))
             }
@@ -362,7 +364,7 @@ impl<'a> SwapContext<'a> {
                 Ok(crate::aldrin::Aldrin::token_accounts(accounts, d))
             }
 
-            #[cfg(feature = "aldrin_v2-swap")]
+            #[cfg(feature = "aldrin-v2-swap")]
             (SwapContext::AldrinV2(accounts), SwapData::AldrinV2(d)) => {
                 Ok(crate::aldrin_v2::AldrinV2::token_accounts(accounts, d))
             }
@@ -377,12 +379,12 @@ impl<'a> SwapContext<'a> {
                 Ok(crate::gamma::Gamma::token_accounts(accounts, &()))
             }
 
-            #[cfg(feature = "scale_amm-swap")]
+            #[cfg(feature = "scale-amm-swap")]
             (SwapContext::ScaleAmm(accounts), SwapData::ScaleAmm(d)) => {
                 Ok(crate::scale_amm::ScaleAmm::token_accounts(accounts, d))
             }
 
-            #[cfg(feature = "scale_vmm-swap")]
+            #[cfg(feature = "scale-vmm-swap")]
             (SwapContext::ScaleVmm(accounts), SwapData::ScaleVmm(d)) => {
                 Ok(crate::scale_vmm::ScaleVmm::token_accounts(accounts, d))
             }
@@ -396,6 +398,11 @@ impl<'a> SwapContext<'a> {
             (SwapContext::Hadron(accounts), SwapData::Hadron(d)) => {
                 Ok(crate::hadron::Hadron::token_accounts(accounts, d))
             }
+
+            #[cfg(feature = "raydium-cpmm-swap")]
+            (SwapContext::RaydiumCpmm(accounts), SwapData::RaydiumCpmm(())) => Ok(
+                crate::raydium_cpmm::RaydiumCpmm::token_accounts(accounts, &()),
+            ),
 
             #[allow(unreachable_patterns)]
             _ => Err(ProgramError::InvalidAccountData),
@@ -435,7 +442,7 @@ impl<'a> Swap<'a> for SwapContext<'a> {
                 signer_seeds,
             ),
 
-            #[cfg(feature = "solfi_v2-swap")]
+            #[cfg(feature = "solfi-v2-swap")]
             (SwapContext::SolFiV2(accounts), SwapData::SolFiV2(d)) => {
                 crate::solfi_v2::SolFiV2::swap_signed(
                     accounts,
@@ -479,7 +486,7 @@ impl<'a> Swap<'a> for SwapContext<'a> {
                 )
             }
 
-            #[cfg(feature = "aldrin_v2-swap")]
+            #[cfg(feature = "aldrin-v2-swap")]
             (SwapContext::AldrinV2(accounts), SwapData::AldrinV2(d)) => {
                 crate::aldrin_v2::AldrinV2::swap_signed(
                     accounts,
@@ -512,7 +519,7 @@ impl<'a> Swap<'a> for SwapContext<'a> {
                 )
             }
 
-            #[cfg(feature = "scale_amm-swap")]
+            #[cfg(feature = "scale-amm-swap")]
             (SwapContext::ScaleAmm(accounts), SwapData::ScaleAmm(d)) => {
                 crate::scale_amm::ScaleAmm::swap_signed(
                     accounts,
@@ -523,7 +530,7 @@ impl<'a> Swap<'a> for SwapContext<'a> {
                 )
             }
 
-            #[cfg(feature = "scale_vmm-swap")]
+            #[cfg(feature = "scale-vmm-swap")]
             (SwapContext::ScaleVmm(accounts), SwapData::ScaleVmm(d)) => {
                 crate::scale_vmm::ScaleVmm::swap_signed(
                     accounts,
@@ -626,7 +633,7 @@ pub fn try_from_tagged_swap_context<'info>(
         }
 
         SwapProtocolTag::SolFiV2 => {
-            #[cfg(feature = "solfi_v2-swap")]
+            #[cfg(feature = "solfi-v2-swap")]
             {
                 validate_tagged_program_account(
                     program_account,
@@ -635,7 +642,7 @@ pub fn try_from_tagged_swap_context<'info>(
                 let ctx = crate::solfi_v2::SolFiV2SwapAccounts::try_from(mine)?;
                 Ok((SwapContext::SolFiV2(ctx), rest))
             }
-            #[cfg(not(feature = "solfi_v2-swap"))]
+            #[cfg(not(feature = "solfi-v2-swap"))]
             {
                 Err(ProgramError::InvalidInstructionData)
             }
@@ -690,7 +697,7 @@ pub fn try_from_tagged_swap_context<'info>(
         }
 
         SwapProtocolTag::AldrinV2 => {
-            #[cfg(feature = "aldrin_v2-swap")]
+            #[cfg(feature = "aldrin-v2-swap")]
             {
                 validate_tagged_program_account(
                     program_account,
@@ -699,7 +706,7 @@ pub fn try_from_tagged_swap_context<'info>(
                 let ctx = crate::aldrin_v2::AldrinV2SwapAccounts::try_from(mine)?;
                 Ok((SwapContext::AldrinV2(ctx), rest))
             }
-            #[cfg(not(feature = "aldrin_v2-swap"))]
+            #[cfg(not(feature = "aldrin-v2-swap"))]
             {
                 Err(ProgramError::InvalidInstructionData)
             }
@@ -735,7 +742,7 @@ pub fn try_from_tagged_swap_context<'info>(
         }
 
         SwapProtocolTag::ScaleAmm => {
-            #[cfg(feature = "scale_amm-swap")]
+            #[cfg(feature = "scale-amm-swap")]
             {
                 validate_tagged_program_account(
                     program_account,
@@ -744,14 +751,14 @@ pub fn try_from_tagged_swap_context<'info>(
                 let ctx = crate::scale_amm::ScaleAmmSwapAccounts::try_from(mine)?;
                 Ok((SwapContext::ScaleAmm(ctx), rest))
             }
-            #[cfg(not(feature = "scale_amm-swap"))]
+            #[cfg(not(feature = "scale-amm-swap"))]
             {
                 Err(ProgramError::InvalidInstructionData)
             }
         }
 
         SwapProtocolTag::ScaleVmm => {
-            #[cfg(feature = "scale_vmm-swap")]
+            #[cfg(feature = "scale-vmm-swap")]
             {
                 validate_tagged_program_account(
                     program_account,
@@ -760,7 +767,7 @@ pub fn try_from_tagged_swap_context<'info>(
                 let ctx = crate::scale_vmm::ScaleVmmSwapAccounts::try_from(mine)?;
                 Ok((SwapContext::ScaleVmm(ctx), rest))
             }
-            #[cfg(not(feature = "scale_vmm-swap"))]
+            #[cfg(not(feature = "scale-vmm-swap"))]
             {
                 Err(ProgramError::InvalidInstructionData)
             }

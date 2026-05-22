@@ -4,6 +4,9 @@ pub mod manifest;
 #[cfg(feature = "aldrin")]
 pub mod aldrin;
 
+#[cfg(feature = "aldrin-v2")]
+pub mod aldrin_v2;
+
 #[cfg(feature = "futarchy")]
 pub mod futarchy;
 
@@ -15,8 +18,27 @@ pub mod omnipair;
 
 #[cfg(feature = "hadron")]
 pub mod hadron;
-#[cfg(feature = "raydium_cpmm")]
+
+#[cfg(feature = "raydium-cpmm")]
 pub mod raydium_cpmm;
+
+#[cfg(feature = "perena")]
+pub mod perena;
+
+#[cfg(feature = "heaven")]
+pub mod heaven;
+
+#[cfg(feature = "scale-amm")]
+pub mod scale_amm;
+
+#[cfg(feature = "scale-vmm")]
+pub mod scale_vmm;
+
+#[cfg(feature = "solfi")]
+pub mod solfi;
+
+#[cfg(feature = "solfi-v2")]
+pub mod solfi_v2;
 
 use solana_address::Address;
 #[cfg(feature = "resolve")]
@@ -35,10 +57,19 @@ pub enum SwapProtocol {
     Gamma { pool: Option<Address> },
 
     #[cfg(feature = "aldrin")]
-    Aldrin { pool: Option<Address>, side: u8 },
+    Aldrin {
+        pool: Option<Address>,
+        side: aldrin::Side,
+    },
+
+    #[cfg(feature = "aldrin-v2")]
+    AldrinV2 { pool: Option<Address>, side: u8 },
 
     #[cfg(feature = "futarchy")]
-    Futarchy { dao: Option<Address>, swap_type: u8 },
+    Futarchy {
+        dao: Option<Address>,
+        swap_type: futarchy::SwapType,
+    },
 
     #[cfg(feature = "manifest")]
     Manifest {
@@ -55,8 +86,46 @@ pub enum SwapProtocol {
         fee_recipient: Address,
         expiration: i64,
     },
-    #[cfg(feature = "raydium_cpmm")]
+
+    #[cfg(feature = "raydium-cpmm")]
     RaydiumCpmm { pool: Option<Address> },
+    #[cfg(feature = "perena")]
+    Perena {
+        pool: Option<Address>,
+        in_index: u8,
+        out_index: u8,
+    },
+
+    #[cfg(feature = "heaven")]
+    Heaven {
+        pool: Option<Address>,
+        direction: u8,
+        encoded_user_defined_event_data: Vec<u8>,
+    },
+
+    #[cfg(feature = "scale-amm")]
+    ScaleAmm {
+        pool: Option<Address>,
+        side: scale_amm::Side,
+    },
+
+    #[cfg(feature = "scale-vmm")]
+    ScaleVmm {
+        pair: Option<Address>,
+        side: scale_vmm::Side,
+    },
+
+    #[cfg(feature = "solfi")]
+    SolFi {
+        market: Option<Address>,
+        is_quote_to_base: bool,
+    },
+
+    #[cfg(feature = "solfi-v2")]
+    SolFiV2 {
+        market: Option<Address>,
+        is_quote_to_base: bool,
+    },
 }
 
 /// A single step in a multi-swap composition.
@@ -90,12 +159,17 @@ pub async fn resolve_swap(
 
         #[cfg(feature = "aldrin")]
         SwapProtocol::Aldrin { pool, side } => {
-            aldrin::resolve(rpc, pool.as_ref(), *side, mint_a, mint_b, user).await
+            aldrin::resolve(rpc, pool.as_ref(), side, mint_a, mint_b, user).await
+        }
+
+        #[cfg(feature = "aldrin-v2")]
+        SwapProtocol::AldrinV2 { pool, side } => {
+            aldrin_v2::resolve(rpc, pool.as_ref(), *side, mint_a, mint_b, user).await
         }
 
         #[cfg(feature = "futarchy")]
         SwapProtocol::Futarchy { dao, swap_type } => {
-            futarchy::resolve(rpc, dao.as_ref(), *swap_type, mint_a, mint_b, user).await
+            futarchy::resolve(rpc, dao.as_ref(), swap_type, mint_a, mint_b, user).await
         }
 
         #[cfg(feature = "manifest")]
@@ -127,9 +201,87 @@ pub async fn resolve_swap(
             .await
         }
 
-        #[cfg(feature = "raydium_cpmm")]
+        #[cfg(feature = "raydium-cpmm")]
         SwapProtocol::RaydiumCpmm { pool } => {
             raydium_cpmm::resolve(rpc, pool.as_ref(), mint_a, mint_b, user).await
+        }
+
+        #[cfg(feature = "perena")]
+        SwapProtocol::Perena {
+            pool,
+            in_index,
+            out_index,
+        } => {
+            perena::resolve(
+                rpc,
+                pool.as_ref(),
+                *in_index,
+                *out_index,
+                mint_a,
+                mint_b,
+                user,
+            )
+            .await
+        }
+
+        #[cfg(feature = "heaven")]
+        SwapProtocol::Heaven {
+            pool,
+            direction,
+            encoded_user_defined_event_data,
+        } => {
+            heaven::resolve(
+                rpc,
+                pool.as_ref(),
+                *direction,
+                encoded_user_defined_event_data,
+                mint_a,
+                mint_b,
+                user,
+            )
+            .await
+        }
+
+        #[cfg(all(feature = "resolve", feature = "scale-amm"))]
+        SwapProtocol::ScaleAmm { pool, side } => {
+            scale_amm::resolve(rpc, pool.as_ref(), side, mint_a, mint_b, user).await
+        }
+
+        #[cfg(all(feature = "resolve", feature = "scale-vmm"))]
+        SwapProtocol::ScaleVmm { pair, side } => {
+            scale_vmm::resolve(rpc, pair.as_ref(), side, mint_a, mint_b, user).await
+        }
+
+        #[cfg(feature = "solfi")]
+        SwapProtocol::SolFi {
+            market,
+            is_quote_to_base,
+        } => {
+            solfi::resolve(
+                rpc,
+                market.as_ref(),
+                *is_quote_to_base,
+                mint_a,
+                mint_b,
+                user,
+            )
+            .await
+        }
+
+        #[cfg(feature = "solfi-v2")]
+        SwapProtocol::SolFiV2 {
+            market,
+            is_quote_to_base,
+        } => {
+            solfi_v2::resolve(
+                rpc,
+                market.as_ref(),
+                *is_quote_to_base,
+                mint_a,
+                mint_b,
+                user,
+            )
+            .await
         }
     }
 }
