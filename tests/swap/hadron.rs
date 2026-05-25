@@ -4,6 +4,7 @@ use {
         get_token_balance, hadron_fixtures_dir, load_and_set_json_fixture, load_program,
         send_transaction, setup_svm, HADRON_PROGRAM_ID, TEST_PROGRAM_ID, TOKEN_PROGRAM_ID,
     },
+    beethoven::SwapProtocolTag,
     beethoven_client::{SYSVAR_CLOCK_ID, SYSVAR_INSTRUCTIONS_ID},
     solana_address::{address, Address},
     solana_clock::Clock,
@@ -108,8 +109,10 @@ fn test_hadron_swap_cpi() {
     // Selling SOL (input=WSOL) for USDC (output)
     let initial_wsol = 1_000_000_000u64; // 1 SOL
     let initial_usdc = 0u64;
-    let trader_input = create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol);
-    let trader_output = create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc);
+    let trader_input =
+        create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol, false);
+    let trader_output =
+        create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc, false);
 
     // Build swap instruction: sell 0.001 SOL for USDC
     let in_amount = 1_000_000u64; // 0.001 SOL
@@ -143,7 +146,13 @@ fn test_hadron_swap_cpi() {
     let expiration = timestamp + 3600;
     extra_data.extend_from_slice(&expiration.to_le_bytes());
 
-    let instruction = build_swap_instruction(accounts, in_amount, min_out_amount, &extra_data);
+    let instruction = build_swap_instruction(
+        accounts,
+        in_amount,
+        min_out_amount,
+        SwapProtocolTag::Hadron,
+        &extra_data,
+    );
 
     // Execute the swap via CPI through beethoven-test program
     let result = send_transaction(&mut svm, &payer, instruction);

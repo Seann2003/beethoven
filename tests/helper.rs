@@ -1,7 +1,7 @@
 use {
     base64::{engine::general_purpose::STANDARD, Engine as _},
+    beethoven::SwapProtocolTag,
     litesvm::LiteSVM,
-    mollusk_svm::{program::keyed_account_for_system_program, result::ProgramResult, Mollusk},
     solana_account::Account,
     solana_address::{address, Address},
     solana_instruction::{AccountMeta, Instruction},
@@ -22,12 +22,16 @@ use {
 pub const TEST_PROGRAM_ID: Address = Address::new_from_array([0x01; 32]);
 pub const TOKEN_PROGRAM_ID: Address = address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 pub const TOKEN_2022_PROGRAM_ID: Address = address!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+pub const ASSOCIATED_TOKEN_PROGRAM_ID: Address =
+    address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+pub const MEMO_PROGRAM_ID: Address = address!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
 
 // Protocol program IDs (for detection)
 pub const KAMINO_PROGRAM_ID: Address = address!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD");
 pub const JUPITER_PROGRAM_ID: Address = address!("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4");
 pub const PERENA_PROGRAM_ID: Address = address!("NUMERUNsFCP3kuNmWZuXtm1AaQCPj9uw6Guv2Ekoi5P");
 pub const SOLFI_PROGRAM_ID: Address = address!("SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe");
+pub const SOLFI_V2_PROGRAM_ID: Address = address!("SV2EYYJyRz2YhfXwXnhNAevDEui5Q6yrfyo13WtupPF");
 pub const GAMMA_PROGRAM_ID: Address = address!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 pub const MANIFEST_PROGRAM_ID: Address = address!("MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms");
 pub const OMNIPAIR_PROGRAM_ID: Address = address!("omnixgS8fnqHfCcTGKWj6JtKjzpJZ1Y5y9pyFkQDkYE");
@@ -37,13 +41,23 @@ pub const ASSOCIATED_TOKEN_PROGRAM_ID: Address =
 pub const HADRON_PROGRAM_ID: Address = address!("Q72w4coozA552keKDdeeh2EyQw32qfMFsHPu6cbatom");
 pub const RAYDIUM_CPMM_PROGRAM_ID: Address =
     address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
+pub const RAYDIUM_CLMM_PROGRAM_ID: Address =
+    address!("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK");
+pub const FUTARCHY_PROGRAM_ID: Address = address!("FUTARELBfJfQ8RDGhg1wdhddq1odMAJUePHFuBYfUxKq");
+pub const HEAVEN_PROGRAM_ID: Address = address!("HEAVENoP2qxoeuF8Dj2oT1GHEnu49U5mJYkdeC8BAX2o");
+pub const ALDRIN_PROGRAM_ID: Address = address!("AMM55ShdkoGRB5jVYPjWziwk8m5MpwyDgsMWHaMSQWH6");
+pub const ALDRIN_V2_PROGRAM_ID: Address = address!("CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4");
+pub const SCALE_AMM_PROGRAM_ID: Address = address!("SCALEwAvEK5gtkdHiFzXfPgtk2YwJxPDzaV3aDmR7tA");
+pub const SCALE_VMM_PROGRAM_ID: Address = address!("SCALEWoRSpVZpMRqHEcDfNvBh3nUSe34jDr9r689gLa");
 pub const SYSTEM_PROGRAM_ID: Address = address!("11111111111111111111111111111111");
+pub const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 pub const BPF_LOADER: Address = address!("BPFLoader2111111111111111111111111111111111");
 
 pub mod discriminator {
     pub const DEPOSIT: u8 = 0;
     pub const SWAP: u8 = 1;
     pub const MULTI_SWAP: u8 = 2;
+    pub const ROUTE: u8 = 3;
 }
 
 // =============================================================================
@@ -58,64 +72,6 @@ pub fn setup_svm_with_program(program_bytes: &[u8]) -> LiteSVM {
     let mut svm = LiteSVM::new();
     let _ = svm.add_program(TEST_PROGRAM_ID, program_bytes);
     svm
-}
-
-// =============================================================================
-// Mollusk Setup
-// =============================================================================
-
-pub fn setup_mollusk_with_programs(
-    beethoven_bytes: &[u8],
-    additional_programs: &[(Address, &[u8])],
-) -> Mollusk {
-    let mut mollusk = Mollusk::default();
-    mollusk.add_program_with_loader_and_elf(&TEST_PROGRAM_ID, &BPF_LOADER, beethoven_bytes);
-
-    for (program_id, bytes) in additional_programs {
-        mollusk.add_program_with_loader_and_elf(program_id, &BPF_LOADER, bytes);
-    }
-
-    // Add the SPL Token program
-    mollusk_svm_programs_token::token::add_program(&mut mollusk);
-
-    mollusk
-}
-
-pub fn get_mollusk_system_program() -> (Address, Account) {
-    keyed_account_for_system_program()
-}
-
-pub fn get_mollusk_token_program() -> (Address, Account) {
-    mollusk_svm_programs_token::token::keyed_account()
-}
-
-pub fn create_mollusk_program_account(program_bytes: &[u8]) -> Account {
-    Account {
-        lamports: 1,
-        data: program_bytes.to_vec(),
-        owner: BPF_LOADER,
-        executable: true,
-        rent_epoch: 0,
-    }
-}
-
-/// Verify mollusk result is successful and return resulting accounts
-pub fn assert_mollusk_success(result: &mollusk_svm::result::InstructionResult) {
-    match &result.program_result {
-        ProgramResult::Success => {}
-        ProgramResult::Failure(e) => {
-            panic!(
-                "Mollusk execution failed: {:?}. Compute units: {}",
-                e, result.compute_units_consumed
-            );
-        }
-        ProgramResult::UnknownError(e) => {
-            panic!(
-                "Mollusk unknown error: {:?}. Compute units: {}",
-                e, result.compute_units_consumed
-            );
-        }
-    }
 }
 
 // =============================================================================
@@ -137,14 +93,21 @@ pub fn create_account_for_mint(mint_data: Mint) -> Account {
 }
 
 /// Create an Account for a Token Account
-pub fn create_account_for_token_account(token_account_data: TokenAccount) -> Account {
+pub fn create_account_for_token_account(
+    token_account_data: TokenAccount,
+    is_2022: bool,
+) -> Account {
     let mut data = vec![0u8; TokenAccount::LEN];
     TokenAccount::pack(token_account_data, &mut data).unwrap();
 
     Account {
         lamports: Rent::default().minimum_balance(TokenAccount::LEN),
         data,
-        owner: TOKEN_PROGRAM_ID,
+        owner: if is_2022 {
+            TOKEN_2022_PROGRAM_ID
+        } else {
+            TOKEN_PROGRAM_ID
+        },
         executable: false,
         rent_epoch: 0,
     }
@@ -156,18 +119,22 @@ pub fn create_token_account(
     owner: &Address,
     mint: &Address,
     amount: u64,
+    is_2022: bool,
 ) -> Address {
     let pubkey = Keypair::new().pubkey();
-    let account = create_account_for_token_account(TokenAccount {
-        mint: *mint,
-        owner: *owner,
-        amount,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    });
+    let account = create_account_for_token_account(
+        TokenAccount {
+            mint: *mint,
+            owner: *owner,
+            amount,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        },
+        is_2022,
+    );
     svm.set_account(pubkey, account).unwrap();
     pubkey
 }
@@ -179,17 +146,21 @@ pub fn create_token_account_at(
     owner: &Address,
     mint: &Address,
     amount: u64,
+    is_2022: bool,
 ) {
-    let account = create_account_for_token_account(TokenAccount {
-        mint: *mint,
-        owner: *owner,
-        amount,
-        delegate: COption::None,
-        state: AccountState::Initialized,
-        is_native: COption::None,
-        delegated_amount: 0,
-        close_authority: COption::None,
-    });
+    let account = create_account_for_token_account(
+        TokenAccount {
+            mint: *mint,
+            owner: *owner,
+            amount,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        },
+        is_2022,
+    );
     svm.set_account(pubkey, account).unwrap();
 }
 
@@ -277,6 +248,33 @@ pub fn create_mock_account_at(svm: &mut LiteSVM, pubkey: Address, owner: &Addres
 // Instruction Builders
 // =============================================================================
 
+fn append_swap_leg_header(
+    data: &mut Vec<u8>,
+    protocol_tag: SwapProtocolTag,
+    accounts_len: usize,
+    extra_data_len: usize,
+) {
+    let fixed_account_count = protocol_tag.fixed_account_count();
+    assert!(
+        accounts_len >= fixed_account_count,
+        "protocol account list is shorter than its fixed prefix",
+    );
+
+    let remaining_accounts_len = accounts_len - fixed_account_count;
+    assert!(
+        remaining_accounts_len <= u8::MAX as usize,
+        "remaining account count does not fit in u8",
+    );
+    assert!(
+        extra_data_len <= u16::MAX as usize,
+        "extra data length does not fit in u16",
+    );
+
+    data.extend_from_slice(&(protocol_tag as u16).to_le_bytes());
+    data.push(remaining_accounts_len as u8);
+    data.extend_from_slice(&(extra_data_len as u16).to_le_bytes());
+}
+
 pub fn build_deposit_instruction(
     accounts: Vec<AccountMeta>,
     amount: u64,
@@ -297,11 +295,13 @@ pub fn build_swap_instruction(
     accounts: Vec<AccountMeta>,
     in_amount: u64,
     min_out_amount: u64,
+    protocol_tag: SwapProtocolTag,
     extra_data: &[u8],
 ) -> Instruction {
     let mut data = vec![discriminator::SWAP];
     data.extend_from_slice(&in_amount.to_le_bytes());
     data.extend_from_slice(&min_out_amount.to_le_bytes());
+    append_swap_leg_header(&mut data, protocol_tag, accounts.len(), extra_data.len());
     data.extend_from_slice(extra_data);
 
     Instruction {
@@ -315,6 +315,7 @@ pub struct SwapLeg {
     pub accounts: Vec<AccountMeta>,
     pub in_amount: u64,
     pub min_out_amount: u64,
+    pub protocol_tag: SwapProtocolTag,
     pub extra_data: Vec<u8>,
 }
 
@@ -325,6 +326,48 @@ pub fn build_multi_swap_instruction(legs: Vec<SwapLeg>) -> Instruction {
     for leg in &legs {
         data.extend_from_slice(&leg.in_amount.to_le_bytes());
         data.extend_from_slice(&leg.min_out_amount.to_le_bytes());
+        append_swap_leg_header(
+            &mut data,
+            leg.protocol_tag,
+            leg.accounts.len(),
+            leg.extra_data.len(),
+        );
+        data.extend_from_slice(&leg.extra_data);
+        all_accounts.extend(leg.accounts.clone());
+    }
+
+    Instruction {
+        program_id: TEST_PROGRAM_ID,
+        accounts: all_accounts,
+        data,
+    }
+}
+
+pub struct RouteLeg {
+    pub accounts: Vec<AccountMeta>,
+    pub protocol_tag: SwapProtocolTag,
+    pub extra_data: Vec<u8>,
+}
+
+pub fn build_route_instruction(
+    initial_in_amount: u64,
+    minimum_final_out_amount: u64,
+    legs: Vec<RouteLeg>,
+) -> Instruction {
+    let mut data = vec![discriminator::ROUTE];
+    data.extend_from_slice(&initial_in_amount.to_le_bytes());
+    data.extend_from_slice(&minimum_final_out_amount.to_le_bytes());
+    data.push(legs.len() as u8);
+
+    let mut all_accounts = Vec::new();
+
+    for leg in &legs {
+        append_swap_leg_header(
+            &mut data,
+            leg.protocol_tag,
+            leg.accounts.len(),
+            leg.extra_data.len(),
+        );
         data.extend_from_slice(&leg.extra_data);
         all_accounts.extend(leg.accounts.clone());
     }
@@ -345,8 +388,16 @@ pub fn send_transaction(
     payer: &Keypair,
     instruction: Instruction,
 ) -> Result<u64, String> {
+    send_transaction_with_instructions(svm, payer, &[instruction])
+}
+
+pub fn send_transaction_with_instructions(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    instructions: &[Instruction],
+) -> Result<u64, String> {
     let tx = Transaction::new_signed_with_payer(
-        &[instruction],
+        instructions,
         Some(&payer.pubkey()),
         &[payer],
         svm.latest_blockhash(),
@@ -510,6 +561,46 @@ pub fn hadron_fixtures_dir() -> String {
 
 pub fn raydium_cpmm_fixtures_dir() -> String {
     format!("{}/fixtures/swap/raydium-cpmm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn raydium_clmm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/raydium-clmm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn aldrin_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/aldrin", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn aldrin_v2_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/aldrin-v2", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn futarchy_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/futarchy", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn perena_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/perena", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn heaven_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/heaven", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn scale_amm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/scale-amm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn scale_vmm_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/scale-vmm", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn solfi_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/solfi", env!("CARGO_MANIFEST_DIR"))
+}
+
+pub fn solfi_v2_fixtures_dir() -> String {
+    format!("{}/fixtures/swap/solfi-v2", env!("CARGO_MANIFEST_DIR"))
 }
 
 #[cfg(feature = "upstream-bpf")]

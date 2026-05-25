@@ -1,7 +1,7 @@
 #![no_std]
 
 use {
-    beethoven_core::Swap,
+    beethoven_core::{Swap, SwapTokenAccounts},
     core::mem::MaybeUninit,
     solana_account_view::AccountView,
     solana_address::Address,
@@ -123,7 +123,7 @@ impl<'info> Swap<'info> for Heaven {
             InstructionAccount::readonly(ctx.ata_program.address()),
             InstructionAccount::readonly(ctx.system_program.address()),
             InstructionAccount::writable(ctx.pool_state.address()),
-            InstructionAccount::readonly_signer(ctx.user.address()),
+            InstructionAccount::writable_signer(ctx.user.address()),
             InstructionAccount::readonly(ctx.token_a_mint.address()),
             InstructionAccount::readonly(ctx.token_b_mint.address()),
             InstructionAccount::writable(ctx.user_token_a_account.address()),
@@ -232,5 +232,20 @@ impl<'info> Swap<'info> for Heaven {
         data: &Self::Data,
     ) -> ProgramResult {
         Self::swap_signed(ctx, in_amount, minimum_out_amount, data, &[])
+    }
+}
+
+impl<'info> SwapTokenAccounts<'info> for Heaven {
+    type Accounts = HeavenSwapAccounts<'info>;
+    type Data = HeavenSwapData<'info>;
+
+    fn token_accounts(
+        ctx: &Self::Accounts,
+        data: &Self::Data,
+    ) -> (&'info AccountView, &'info AccountView) {
+        match data.direction {
+            SwapDirection::Buy => (ctx.user_token_b_account, ctx.user_token_a_account),
+            SwapDirection::Sell => (ctx.user_token_a_account, ctx.user_token_b_account),
+        }
     }
 }

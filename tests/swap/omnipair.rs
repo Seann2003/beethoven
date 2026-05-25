@@ -5,6 +5,7 @@ use {
         send_transaction, setup_svm, OMNIPAIR_PROGRAM_ID, TEST_PROGRAM_ID, TOKEN_2022_PROGRAM_ID,
         TOKEN_PROGRAM_ID,
     },
+    beethoven::SwapProtocolTag,
     solana_address::{address, Address},
     solana_instruction::AccountMeta,
     solana_keypair::Keypair,
@@ -77,8 +78,10 @@ fn test_omnipair_swap_cpi() {
     // Selling SOL (input=WSOL) for USDC (output)
     let initial_wsol = 1_000_000_000u64; // 1 SOL
     let initial_usdc = 0u64;
-    let trader_input = create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol);
-    let trader_output = create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc);
+    let trader_input =
+        create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol, false);
+    let trader_output =
+        create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc, false);
 
     // Build swap instruction: sell 0.001 SOL for USDC
     let in_amount = 1_000_000u64; // 0.001 SOL
@@ -106,7 +109,13 @@ fn test_omnipair_swap_cpi() {
     // Omnipair swap has no extra data
     let extra_data: &[u8] = &[];
 
-    let instruction = build_swap_instruction(accounts, in_amount, min_out_amount, extra_data);
+    let instruction = build_swap_instruction(
+        accounts,
+        in_amount,
+        min_out_amount,
+        SwapProtocolTag::Omnipair,
+        extra_data,
+    );
 
     // Execute the swap via CPI through beethoven-test program
     let result = send_transaction(&mut svm, &payer, instruction);

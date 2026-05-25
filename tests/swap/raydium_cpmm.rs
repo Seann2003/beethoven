@@ -4,6 +4,7 @@ use {
         get_token_balance, load_and_set_json_fixture, load_program, raydium_cpmm_fixtures_dir,
         send_transaction, setup_svm, RAYDIUM_CPMM_PROGRAM_ID, TEST_PROGRAM_ID, TOKEN_PROGRAM_ID,
     },
+    beethoven::SwapProtocolTag,
     solana_address::{address, Address},
     solana_clock::Clock,
     solana_instruction::AccountMeta,
@@ -79,8 +80,10 @@ fn test_raydium_cpmm_swap_cpi() {
     // Selling SOL (input=WSOL) for USDC (output)
     let initial_wsol = 1_000_000_000u64;
     let initial_usdc = 0u64;
-    let trader_input = create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol);
-    let trader_output = create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc);
+    let trader_input =
+        create_token_account(&mut svm, &payer.pubkey(), &WSOL_MINT, initial_wsol, false);
+    let trader_output =
+        create_token_account(&mut svm, &payer.pubkey(), &USDC_MINT, initial_usdc, false);
 
     let in_amount = 1_000_000u64;
     let min_out_amount = 1u64;
@@ -106,7 +109,13 @@ fn test_raydium_cpmm_swap_cpi() {
     // Raydium CPMM swap_base_input has no extra data
     let extra_data: &[u8] = &[];
 
-    let instruction = build_swap_instruction(accounts, in_amount, min_out_amount, extra_data);
+    let instruction = build_swap_instruction(
+        accounts,
+        in_amount,
+        min_out_amount,
+        SwapProtocolTag::RaydiumCpmm,
+        extra_data,
+    );
 
     // Execute the swap via CPI through beethoven-test program
     let result = send_transaction(&mut svm, &payer, instruction);

@@ -5,6 +5,7 @@ use pinocchio::{error::ProgramError, AccountView, Address, ProgramResult};
 
 mod deposit;
 mod multi_swap;
+mod route;
 mod swap;
 
 pinocchio::no_allocator!();
@@ -14,7 +15,7 @@ pinocchio::program_entrypoint!(process_instruction);
 #[inline(never)]
 pub fn process_instruction(
     _program_id: &Address,
-    accounts: &[AccountView],
+    accounts: &mut [AccountView],
     instruction_data: &[u8],
 ) -> ProgramResult {
     let (discriminator, data) = instruction_data
@@ -25,6 +26,7 @@ pub fn process_instruction(
         0 => deposit::process(accounts, data),
         1 => swap::process(accounts, data),
         2 => multi_swap::process(accounts, data),
+        3 => route::process(accounts, data),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
